@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 
+from statement_categorizer import rules_api
 from statement_categorizer.api import router
 from statement_categorizer.config import get_settings
 from statement_categorizer.db import Database
@@ -16,6 +17,7 @@ def create_app(database: Database | None = None) -> FastAPI:
     # would run Alembic migrations instead.
     app.state.database.create_schema()
     app.include_router(router)
+    app.include_router(rules_api.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:
