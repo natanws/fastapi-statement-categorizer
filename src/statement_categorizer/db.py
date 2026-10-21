@@ -49,7 +49,30 @@ class Transaction(Base):
     # Same file imported twice -> same fingerprints -> the unique index rejects duplicates.
     fingerprint: Mapped[str] = mapped_column(String(64), unique=True)
     category: Mapped[str | None] = mapped_column(String(64), default=None, index=True)
+    # Explains the category: which rule set it, or "manual" when a person did. Manual categories
+    # are never overwritten by re-running the rules.
+    category_source: Mapped[str | None] = mapped_column(String(8), default=None)
+    rule_id: Mapped[int | None] = mapped_column(
+        ForeignKey("rules.id", ondelete="SET NULL"), default=None
+    )
     batch_id: Mapped[int] = mapped_column(ForeignKey("import_batches.id"))
+
+
+class Rule(Base):
+    """Categorization rule. Rules run in priority order (lowest first); the first match wins."""
+
+    __tablename__ = "rules"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(80))
+    category: Mapped[str] = mapped_column(String(64))
+    priority: Mapped[int] = mapped_column(default=100)
+    match_type: Mapped[str] = mapped_column(String(8))  # "contains" or "regex"
+    pattern: Mapped[str] = mapped_column(String(200))
+    direction: Mapped[str] = mapped_column(String(8), default="any")  # debit | credit | any
+    min_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), default=None)
+    max_amount: Mapped[Decimal | None] = mapped_column(Numeric(14, 2), default=None)
+    enabled: Mapped[bool] = mapped_column(default=True)
 
 
 def make_engine(url: str) -> Engine:

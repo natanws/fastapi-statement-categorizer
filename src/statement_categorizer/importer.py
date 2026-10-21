@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from statement_categorizer.db import ImportBatch, Transaction
 from statement_categorizer.fingerprint import fingerprints
 from statement_categorizer.parsers import CsvLayout, StatementParseError, parse_csv, parse_ofx
+from statement_categorizer.rules import categorize
 
 SUPPORTED_FORMATS = ("csv", "ofx")
 
@@ -50,7 +51,7 @@ def import_statement(
     )
     session.add(batch)
     session.flush()
-    session.add_all(
+    created = [
         Transaction(
             account=account,
             posted_on=tx.posted_on,
@@ -60,6 +61,9 @@ def import_statement(
             batch_id=batch.id,
         )
         for tx, key in new
-    )
+    ]
+    session.add_all(created)
     session.commit()
+    # New transactions are categorized right away with the current rules.
+    categorize(session, created)
     return batch

@@ -26,3 +26,5 @@ class TransactionOut(BaseModel):
     description: str
     amount: Decimal
     category: str | None
+    category_source: str | None
+    rule_id: int | None
